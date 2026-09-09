@@ -29,4 +29,76 @@ export interface BatteryResult {
   runtimeHours: number;
   /** 런타임 분 단위 변환 */
   runtimeMinutes: number;
-  /** 포맷팅
+  /** 포맷팅된 문자열 (예: "8시간 30분") */
+  formattedRuntime: string;
+  /** 방전 전류 (A) */
+  dischargeCurrentA: number;
+  /** 실질 가용 용량 (Ah) */
+  usableCapacityAh: number;
+}
+
+export function calculateBattery(inputs: BatteryInputs): BatteryResult {
+  const {
+    capacity,
+    capacityUnit,
+    voltage,
+    loadValue,
+    loadUnit,
+    dischargeDepth,
+    efficiency,
+    peukertExponent = 1.0,
+    ratedDischargeHours = 20,
+  } = inputs;
+
+  // 1. 용량을 Ah 단위로 통일
+  let capacityAh = capacityUnit === 'mAh' ? capacity / 1000 : capacity;
+
+  // 2. 부하를 방전 전류 (A) 단위로 변환
+  let dischargeCurrentA = 0;
+  if (loadUnit === 'A') {
+    dischargeCurrentA = loadValue;
+  } else if (loadUnit === 'mA') {
+    dischargeCurrentA = loadValue / 1000;
+  } else if (loadUnit === 'W') {
+    dischargeCurrentA = voltage > 0 ? loadValue / voltage : 0;
+  }
+
+  // 3. DoD 및 효율 적용한 가용 용량 (단순 선형 계산용)
+  const usableCapacityAh = capacityAh * (dischargeDepth / 100) * (efficiency / 100);
+
+  let runtimeHours = 0;
+
+  if (dischargeCurrentA > 0) {
+    if (peukertExponent > 1.0) {
+      // Peukert's Law 적용
+      // t = H * (C / (I * H))^k
+      // 여기에 효율 및 DoD 비율 적용
+      const C_eff = capacityAh * (dischargeDepth / 100) * (efficiency / 100);
+      const ratio = C_eff / (dischargeCurrentA * ratedDischargeHours);
+      if (ratio > 0) {
+        runtimeHours = ratedDischargeHours * Math.pow(ratio, peukertExponent);
+      }
+    } else {
+      // 단순 선형 계산
+      runtimeHours = usableCapacityAh / dischargeCurrentA;
+    }
+  }
+
+  const runtimeMinutes = runtimeHours * 60;
+  const hoursInt = Math.floor(runtimeHours);
+  const minsInt = Math.round((runtimeHours - hoursInt) * 60);
+
+  let formattedRuntime = '';
+  if (hoursInt > 0) {
+    formattedRuntime += `${hoursInt}시간 `;
+  }
+  formattedRuntime += `${minsInt}분`;
+
+  return {
+    runtimeHours: Number(runtimeHours.toFixed(2)),
+    runtimeMinutes: Number(runtimeMinutes.toFixed(0)),
+    formattedRuntime,
+    dischargeCurrentA: Number(dischargeCurrentA.toFixed(3)),
+    usableCapacityAh: Number(usableCapacityAh.toFixed(2)),
+  };
+}

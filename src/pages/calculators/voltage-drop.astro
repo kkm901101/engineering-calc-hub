@@ -1,0 +1,144 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout 
+  title="케이블 전압 강하 계산기 | EngCalc Hub"
+  description="선로 방식(DC, 단상, 3상), 거리, 전류에 따른 전압 강하율과 권장 전선 규격을 계산합니다."
+>
+  <section class="max-w-4xl mx-auto px-4 py-8">
+    <div class="mb-8 text-center">
+      <h1 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight sm:text-4xl">
+        케이블 전압 강하 계산기
+      </h1>
+      <p class="mt-2 text-slate-600 dark:text-slate-400">
+        한국전기설비규정(KEC) 및 NEC 기준 허용 전압 강하율(3% 이내 권장)을 판별합니다.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+      <!-- 입력부 -->
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">전원 공급 방식</label>
+          <select id="phase" class="w-full rounded-lg border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white p-2.5">
+            <option value="dc">직류 (DC 2선식)</option>
+            <option value="ac_single" selected>단상 교류 (1상 2선식 220V 등)</option>
+            <option value="ac_three">3상 교류 (3상 3선/4선식 380V 등)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">입력 전압 (V)</label>
+          <input type="number" id="voltage" value="220" min="1" step="any" class="w-full rounded-lg border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white p-2.5" />
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">부하 전류 (A)</label>
+          <input type="number" id="current" value="15" min="0.1" step="any" class="w-full rounded-lg border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white p-2.5" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">편도 배선 거리</label>
+            <input type="number" id="distance" value="30" min="1" step="any" class="w-full rounded-lg border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white p-2.5" />
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">거리 단위</label>
+            <select id="distanceUnit" class="w-full rounded-lg border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white p-2.5">
+              <option value="meters" selected>미터 (m)</option>
+              <option value="feet">피트 (ft)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">도체 재질</label>
+          <select id="material" class="w-full rounded-lg border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white p-2.5">
+            <option value="copper" selected>구리 (동선, Cu)</option>
+            <option value="aluminum">알루미늄 (Al)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 결과부 -->
+      <div class="flex flex-col justify-center bg-slate-50 dark:bg-slate-900/50 p-6 rounded-xl border border-slate-200 dark:border-slate-700/60">
+        <span class="text-sm font-medium text-slate-500 dark:text-slate-400">선로 전압 강하율</span>
+        <div class="mt-2 flex items-baseline gap-2">
+          <span class="text-4xl font-extrabold text-blue-600 dark:text-blue-400" id="dropPercent">-- %</span>
+          <span class="text-lg font-bold text-slate-600 dark:text-slate-300" id="dropVolts">(-- V)</span>
+        </div>
+
+        <div class="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full w-fit" id="statusBadge">
+          연산 중...
+        </div>
+
+        <div class="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700 space-y-3 text-sm">
+          <div class="flex justify-between">
+            <span class="text-slate-600 dark:text-slate-400">부하단 수전 전압:</span>
+            <span class="font-bold text-slate-900 dark:text-white" id="loadVoltage">-- V</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-600 dark:text-slate-400">선로 전력 손실:</span>
+            <span class="font-bold text-slate-900 dark:text-white" id="powerLoss">-- W</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-600 dark:text-slate-400">3% 충족 권장 굵기:</span>
+            <span class="font-bold text-blue-600 dark:text-blue-400" id="recSize">--</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    import { calculateVoltageDrop, type PhaseType, type ConductorMaterial, type DistanceUnit } from '../../lib/calculators/voltageDrop';
+
+    const phaseInput = document.getElementById('phase') as HTMLSelectElement;
+    const voltageInput = document.getElementById('voltage') as HTMLInputElement;
+    const currentInput = document.getElementById('current') as HTMLInputElement;
+    const distanceInput = document.getElementById('distance') as HTMLInputElement;
+    const distanceUnitInput = document.getElementById('distanceUnit') as HTMLSelectElement;
+    const materialInput = document.getElementById('material') as HTMLSelectElement;
+
+    const dropPercent = document.getElementById('dropPercent') as HTMLSpanElement;
+    const dropVolts = document.getElementById('dropVolts') as HTMLSpanElement;
+    const loadVoltage = document.getElementById('loadVoltage') as HTMLSpanElement;
+    const powerLoss = document.getElementById('powerLoss') as HTMLSpanElement;
+    const recSize = document.getElementById('recSize') as HTMLSpanElement;
+    const statusBadge = document.getElementById('statusBadge') as HTMLDivElement;
+
+    function runCalculation() {
+      const res = calculateVoltageDrop({
+        phase: phaseInput.value as PhaseType,
+        voltage: parseFloat(voltageInput.value) || 220,
+        current: parseFloat(currentInput.value) || 0,
+        distance: parseFloat(distanceInput.value) || 0,
+        distanceUnit: distanceUnitInput.value as DistanceUnit,
+        material: materialInput.value as ConductorMaterial,
+        targetMaxDropPercent: 3.0
+      });
+
+      dropPercent.textContent = `${res.percentageDrop.toFixed(2)}%`;
+      dropVolts.textContent = `(${res.voltageDrop.toFixed(2)} V)`;
+      loadVoltage.textContent = `${res.voltageAtLoad.toFixed(2)} V`;
+      powerLoss.textContent = `${res.powerLoss.toFixed(1)} W`;
+      recSize.textContent = `${res.recommendedWire.mm2} mm² (약 ${res.recommendedWire.awg})`;
+
+      if (res.isAcceptable) {
+        statusBadge.textContent = '✓ 규격 만족 (3% 이내 양호)';
+        statusBadge.className = 'mt-2 inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full w-fit bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300';
+      } else {
+        statusBadge.textContent = '⚠ 전압 강하 과다 (3% 기준 초과)';
+        statusBadge.className = 'mt-2 inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full w-fit bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300';
+      }
+    }
+
+    [phaseInput, voltageInput, currentInput, distanceInput, distanceUnitInput, materialInput].forEach(el => {
+      el?.addEventListener('input', runCalculation);
+      el?.addEventListener('change', runCalculation);
+    });
+
+    runCalculation();
+  </script>
+</BaseLayout>

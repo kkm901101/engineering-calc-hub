@@ -1,0 +1,94 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout 
+  title="모터 토크 및 출력 계산기 | EngCalc Hub"
+  description="회전수(RPM), 회전력 토크(Nm, kgf·m), 축 출력(kW, 마력 HP)을 상호 변환 계산합니다."
+>
+  <section class="max-w-4xl mx-auto px-4 py-8">
+    <div class="mb-8 text-center">
+      <h1 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight sm:text-4xl">
+        모터 토크 및 출력 계산기
+      </h1>
+      <p class="mt-2 text-slate-600 dark:text-slate-400">
+        모터 축의 회전수와 전달 토크를 기반으로 기계적 출력(동력)을 산출합니다.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+      <!-- 입력부 -->
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">회전 속도 (RPM, 분당 회전수)</label>
+          <input type="number" id="rpm" value="1750" min="1" step="any" class="w-full rounded-lg border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white p-2.5" />
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">모터 토크 (N·m, 뉴턴미터)</label>
+          <input type="number" id="torque" value="40" min="0" step="any" class="w-full rounded-lg border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white p-2.5" />
+        </div>
+      </div>
+
+      <!-- 결과부 -->
+      <div class="flex flex-col justify-center bg-slate-50 dark:bg-slate-900/50 p-6 rounded-xl border border-slate-200 dark:border-slate-700/60">
+        <span class="text-sm font-medium text-slate-500 dark:text-slate-400">계산된 축 동력 (출력)</span>
+        <div class="mt-2 text-4xl font-extrabold text-emerald-600 dark:text-emerald-400" id="powerKw">
+          -- kW
+        </div>
+        <p class="mt-1 text-sm font-semibold text-slate-600 dark:text-slate-300" id="powerHp">-- HP (마력)</p>
+
+        <div class="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700 space-y-3 text-sm">
+          <div class="flex justify-between">
+            <span class="text-slate-600 dark:text-slate-400">토크 환산 (lb-ft):</span>
+            <span class="font-bold text-slate-900 dark:text-white" id="torqueLbFt">-- lb-ft</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-600 dark:text-slate-400">각속도 (Angular Velocity):</span>
+            <span class="font-bold text-slate-900 dark:text-white" id="radSec">-- rad/s</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-600 dark:text-slate-400">소비 전력 (와트):</span>
+            <span class="font-bold text-slate-900 dark:text-white" id="powerWatts">-- W</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    import { calculateMotor } from '../../lib/calculators/motor';
+
+    const rpmInput = document.getElementById('rpm') as HTMLInputElement;
+    const torqueInput = document.getElementById('torque') as HTMLInputElement;
+
+    const powerKw = document.getElementById('powerKw') as HTMLDivElement;
+    const powerHp = document.getElementById('powerHp') as HTMLParagraphElement;
+    const torqueLbFt = document.getElementById('torqueLbFt') as HTMLSpanElement;
+    const radSec = document.getElementById('radSec') as HTMLSpanElement;
+    const powerWatts = document.getElementById('powerWatts') as HTMLSpanElement;
+
+    function runCalculation() {
+      const rpm = parseFloat(rpmInput.value) || 0;
+      const torque = parseFloat(torqueInput.value) || 0;
+
+      const res = calculateMotor({
+        solveFor: 'power',
+        rpm: rpm,
+        torque: torque,
+        torqueUnit: 'Nm'
+      });
+
+      powerKw.textContent = `${res.powerKw.toFixed(2)} kW`;
+      powerHp.textContent = `${res.powerHp.toFixed(2)} HP (마력)`;
+      torqueLbFt.textContent = `${res.torqueLbFt.toFixed(2)} lb-ft`;
+      radSec.textContent = `${res.radPerSec.toFixed(2)} rad/s`;
+      powerWatts.textContent = `${res.powerWatts.toFixed(0)} W`;
+    }
+
+    rpmInput.addEventListener('input', runCalculation);
+    torqueInput.addEventListener('input', runCalculation);
+
+    runCalculation();
+  </script>
+</BaseLayout>

@@ -1,0 +1,134 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout 
+  title="배터리 사용 시간(런타임) 계산기 | EngCalc Hub"
+  description="방전 심도(DoD), 인버터 효율, 포이케르트 계수를 적용하여 정확한 배터리 지속 시간을 산출합니다."
+>
+  <section class="max-w-4xl mx-auto px-4 py-8">
+    <div class="mb-8 text-center">
+      <h1 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight sm:text-4xl">
+        배터리 사용 시간 계산기
+      </h1>
+      <p class="mt-2 text-slate-600 dark:text-slate-400">
+        배터리 종류별 안전 방전율과 부하 특성에 따른 실제 가용 시간을 계산합니다.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+      <!-- 입력부 -->
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">배터리 종류</label>
+          <select id="batteryType" class="w-full rounded-lg border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white p-2.5">
+            <option value="lead-acid" selected>납축전지 (권장 방전 심도 50%)</option>
+            <option value="lifepo4">인산철 배터리 LiFePO4 (방전 심도 90%)</option>
+            <option value="li-ion">리튬이온 Li-ion (방전 심도 80%)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">배터리 용량 (Ah)</label>
+          <input type="number" id="capacity" value="100" min="1" step="any" class="w-full rounded-lg border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white p-2.5" />
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">공칭 전압 (V)</label>
+          <input type="number" id="voltage" value="12" min="1" step="any" class="w-full rounded-lg border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white p-2.5" />
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">소비 전류 (A, 암페어)</label>
+          <input type="number" id="current" value="5" min="0.1" step="any" class="w-full rounded-lg border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white p-2.5" />
+        </div>
+
+        <div>
+          <div class="flex justify-between text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            <span>변환/인버터 효율</span>
+            <span id="efficiencyLabel">90%</span>
+          </div>
+          <input type="range" id="efficiency" min="70" max="100" value="90" class="w-full accent-blue-600" />
+        </div>
+      </div>
+
+      <!-- 결과 표시부 -->
+      <div class="flex flex-col justify-center bg-slate-50 dark:bg-slate-900/50 p-6 rounded-xl border border-slate-200 dark:border-slate-700/60">
+        <span class="text-sm font-medium text-slate-500 dark:text-slate-400">예상 연속 사용 시간</span>
+        <div class="mt-2 text-4xl font-extrabold text-blue-600 dark:text-blue-400" id="runtimeOutput">
+          --시간 --분
+        </div>
+        <p class="mt-1 text-xs text-slate-500">배터리 안전 방전 심도(DoD) 및 포이케르트 지수 반영</p>
+
+        <div class="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700 space-y-3">
+          <div class="flex justify-between text-sm">
+            <span class="text-slate-600 dark:text-slate-400">실제 가용 에너지:</span>
+            <span class="font-bold text-slate-900 dark:text-white" id="usableEnergy">-- Wh</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-slate-600 dark:text-slate-400">소비 전력 부하:</span>
+            <span class="font-bold text-slate-900 dark:text-white" id="loadPower">-- W</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 하단 이론 설명 -->
+    <article class="mt-12 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+      <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-2">💡 포이케르트 법칙 (Peukert's Law) 안내</h2>
+      <p class="text-sm leading-relaxed">
+        단순 계산 공식(시간 = 용량 / 전류)은 대전류 방전 시 오차가 큽니다. 배터리는 방전 속도가 빠를수록 내부 화학 반응 저항으로 인해 꺼내 쓸 수 있는 실효 용량이 급격히 감소합니다. 본 계산기는 배터리 유형별 지수(k)와 권장 수명 보호용 방전 한도(DoD)를 적용하여 현장 오차를 줄입니다.
+      </p>
+    </article>
+  </section>
+
+  <script>
+    const capacityInput = document.getElementById('capacity') as HTMLInputElement;
+    const voltageInput = document.getElementById('voltage') as HTMLInputElement;
+    const currentInput = document.getElementById('current') as HTMLInputElement;
+    const efficiencyInput = document.getElementById('efficiency') as HTMLInputElement;
+    const efficiencyLabel = document.getElementById('efficiencyLabel') as HTMLSpanElement;
+    const batteryTypeSelect = document.getElementById('batteryType') as HTMLSelectElement;
+
+    const runtimeOutput = document.getElementById('runtimeOutput') as HTMLDivElement;
+    const usableEnergy = document.getElementById('usableEnergy') as HTMLSpanElement;
+    const loadPower = document.getElementById('loadPower') as HTMLSpanElement;
+
+    const PRESETS: Record<string, { dod: number; k: number }> = {
+      'lead-acid': { dod: 50, k: 1.25 },
+      'lifepo4': { dod: 90, k: 1.05 },
+      'li-ion': { dod: 80, k: 1.10 }
+    };
+
+    function update() {
+      const cap = parseFloat(capacityInput.value) || 0;
+      const v = parseFloat(voltageInput.value) || 0;
+      const i = parseFloat(currentInput.value) || 0;
+      const eff = parseFloat(efficiencyInput.value) || 90;
+      efficiencyLabel.textContent = `${eff}%`;
+
+      const preset = PRESETS[batteryTypeSelect.value] || PRESETS['lead-acid'];
+
+      loadPower.textContent = `${(v * i).toFixed(1)} W`;
+      const usableWh = v * cap * (preset.dod / 100) * (eff / 100);
+      usableEnergy.textContent = `${usableWh.toFixed(1)} Wh`;
+
+      if (i > 0 && cap > 0) {
+        const H = 20;
+        const peukertHours = H * Math.pow(cap / (i * H), preset.k) * (preset.dod / 100) * (eff / 100);
+        const hours = Math.floor(peukertHours);
+        const minutes = Math.round((peukertHours - hours) * 60);
+        runtimeOutput.textContent = `${hours}시간 ${minutes}분`;
+      } else {
+        runtimeOutput.textContent = '0시간 0분';
+      }
+    }
+
+    [capacityInput, voltageInput, currentInput, efficiencyInput, batteryTypeSelect].forEach(el => {
+      el?.addEventListener('input', update);
+      el?.addEventListener('change', update);
+    });
+
+    update();
+  </script>
+</BaseLayout>
