@@ -1,57 +1,94 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import MotorTorqueCalculator from '../../components/MotorTorqueCalculator';
 ---
 
 <BaseLayout 
-  title="모터 토크 및 출력 계산기 | EngCalc Hub" 
-  description="모터의 회전수(RPM), 출력(kW/HP), 토크(N·m / kgf·m) 상호 환산 및 실무 모터 선정 계산"
+  title="모터 토크 및 출력 계산기 | EngCalc Hub"
+  description="회전수(RPM), 회전력 토크(Nm, kgf·m), 축 출력(kW, 마력 HP)을 상호 변환 계산합니다."
 >
-  <div class="max-w-4xl mx-auto px-4 py-8 space-y-10">
-    <header class="text-center space-y-2">
-      <h1 class="text-3xl font-extrabold tracking-tight sm:text-4xl text-slate-900 dark:text-slate-100">
+  <section class="max-w-4xl mx-auto px-4 py-8">
+    <div class="mb-8 text-center">
+      <h1 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight sm:text-4xl">
         모터 토크 및 출력 계산기
       </h1>
-      <p class="text-slate-600 dark:text-slate-400 max-w-2xl mx-auto text-sm sm:text-base">
-        회전속도(RPM), 기계적 출력 파워, 축 토크 간의 상관관계를 계산하고 N·m 및 kgf·m 단위로 상호 환산합니다.
+      <p class="mt-2 text-slate-600 dark:text-slate-400">
+        모터 축의 회전수와 전달 토크를 기반으로 기계적 출력(동력)을 산출합니다.
       </p>
-    </header>
+    </div>
 
-    <!-- Interactive Tool Component -->
-    <section>
-      <MotorTorqueCalculator client:load />
-    </section>
-
-    <!-- Technical Guide & Engineering Documentation -->
-    <article class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-8 shadow-sm space-y-8 text-slate-700 dark:text-slate-300 leading-relaxed">
-      <header class="border-b border-slate-200 dark:border-slate-800 pb-4">
-        <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100">모터 동력 및 토크 산출식 해설</h2>
-        <p class="text-sm text-slate-500 mt-1">회전 기계 설계 시 적용되는 기본 역학 이론</p>
-      </header>
-
-      <section class="space-y-3">
-        <h3 class="text-lg font-bold text-slate-900 dark:text-slate-100">1. 동력(Power)과 토크(Torque)의 관계</h3>
-        <p>
-          기계적 일률 $P$는 축 회전 각속도 $\omega$와 축에 가해지는 토크 $T$의 곱으로 표현됩니다.
-        </p>
-        <div class="p-4 bg-slate-100 dark:bg-slate-800/60 rounded-xl font-mono text-sm border border-slate-200 dark:border-slate-700 space-y-2">
-          <p>• $P(\text{W}) = T(\text{N}\cdot\text{m}) \times \omega = T \times \frac{2\pi \times N}{60}$</p>
-          <p>• $T(\text{N}\cdot\text{m}) \approx 9550 \times \frac{P(\text{kW})}{N(\text{RPM})}$</p>
-          <p>• $T(\text{kgf}\cdot\text{m}) \approx 974 \times \frac{P(\text{kW})}{N(\text{RPM})}$</p>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+      <!-- 입력부 -->
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">회전 속도 (RPM, 분당 회전수)</label>
+          <input type="number" id="rpm" value="1750" min="1" step="any" class="w-full rounded-lg border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white p-2.5" />
         </div>
-      </section>
 
-      <section class="space-y-3">
-        <h3 class="text-lg font-bold text-slate-900 dark:text-slate-100">2. 현장 선정 시 권장 안전율(Safety Factor)</h3>
-        <p>
-          실제 컨베이어, 감속기, 펌프 부하 등 회전체를 구동할 때는 정격 정상 운전 토크 외에 **초기 기동 토크(Start-up Torque)**와 관성 모멘트($J$)를 극복해야 합니다.
-        </p>
-        <ul class="list-disc pl-5 space-y-2 text-sm sm:text-base">
-          <li><strong>일반 연속 부하 (팬, 원심 펌프 등):</strong> 정격 대비 안전율 1.2 ~ 1.3배 권장</li>
-          <li><strong>고관성 부하 (컨베이어, 분쇄기, 믹서):</strong> 정격 대비 안전율 1.5 ~ 2.0배 권장</li>
-          <li><strong>감속기 체결 시:</strong> 감속비($i$)에 비례하여 축 토크는 증가하지만, 감속기 기계 효율(보통 일단당 90~95%)에 따른 토크 손실을 감안해야 합니다.</li>
-        </ul>
-      </section>
-    </article>
-  </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">모터 토크 (N·m, 뉴턴미터)</label>
+          <input type="number" id="torque" value="40" min="0" step="any" class="w-full rounded-lg border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white p-2.5" />
+        </div>
+      </div>
+
+      <!-- 결과부 -->
+      <div class="flex flex-col justify-center bg-slate-50 dark:bg-slate-900/50 p-6 rounded-xl border border-slate-200 dark:border-slate-700/60">
+        <span class="text-sm font-medium text-slate-500 dark:text-slate-400">계산된 축 동력 (출력)</span>
+        <div class="mt-2 text-4xl font-extrabold text-emerald-600 dark:text-emerald-400" id="powerKw">
+          -- kW
+        </div>
+        <p class="mt-1 text-sm font-semibold text-slate-600 dark:text-slate-300" id="powerHp">-- HP (마력)</p>
+
+        <div class="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700 space-y-3 text-sm">
+          <div class="flex justify-between">
+            <span class="text-slate-600 dark:text-slate-400">토크 환산 (lb-ft):</span>
+            <span class="font-bold text-slate-900 dark:text-white" id="torqueLbFt">-- lb-ft</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-600 dark:text-slate-400">각속도 (Angular Velocity):</span>
+            <span class="font-bold text-slate-900 dark:text-white" id="radSec">-- rad/s</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-600 dark:text-slate-400">소비 전력 (와트):</span>
+            <span class="font-bold text-slate-900 dark:text-white" id="powerWatts">-- W</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    import { calculateMotor } from '../../lib/calculators/motor';
+
+    const rpmInput = document.getElementById('rpm') as HTMLInputElement;
+    const torqueInput = document.getElementById('torque') as HTMLInputElement;
+
+    const powerKw = document.getElementById('powerKw') as HTMLDivElement;
+    const powerHp = document.getElementById('powerHp') as HTMLParagraphElement;
+    const torqueLbFt = document.getElementById('torqueLbFt') as HTMLSpanElement;
+    const radSec = document.getElementById('radSec') as HTMLSpanElement;
+    const powerWatts = document.getElementById('powerWatts') as HTMLSpanElement;
+
+    function runCalculation() {
+      const rpm = parseFloat(rpmInput.value) || 0;
+      const torque = parseFloat(torqueInput.value) || 0;
+
+      const res = calculateMotor({
+        solveFor: 'power',
+        rpm: rpm,
+        torque: torque,
+        torqueUnit: 'Nm'
+      });
+
+      powerKw.textContent = `${res.powerKw.toFixed(2)} kW`;
+      powerHp.textContent = `${res.powerHp.toFixed(2)} HP (마력)`;
+      torqueLbFt.textContent = `${res.torqueLbFt.toFixed(2)} lb-ft`;
+      radSec.textContent = `${res.radPerSec.toFixed(2)} rad/s`;
+      powerWatts.textContent = `${res.powerWatts.toFixed(0)} W`;
+    }
+
+    rpmInput.addEventListener('input', runCalculation);
+    torqueInput.addEventListener('input', runCalculation);
+
+    runCalculation();
+  </script>
 </BaseLayout>
